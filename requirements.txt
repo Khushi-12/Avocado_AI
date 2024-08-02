@@ -4,3 +4,8 @@ spacy
 beautifulsoup4
 requests
 logging
+selenium
+webdriver-manager
+transformers
+torch
+en_core_web_sm

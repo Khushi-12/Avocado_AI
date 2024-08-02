@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Article Processor</h1>
+    <textarea id="article-input" placeholder="Enter your article text here..."></textarea><br>
+    <button onclick="processArticle()">Process Article</button>
+    <div id="output"></div>
+
+    <script>
+        async function processArticle() {
+            const text = document.getElementById('article-input').value;
+
+            if (!text) {
+                alert('Please enter some text.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/analyze_articles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                displayResults(data);
+            } catch (error) {
+                console.error('Error processing article:', error);
+                alert('Failed to process article. Please check the console for details.');
+            }
+        }
+
+        function displayResults(data) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = `
+                <h2>Results</h2>
+                <h3>Named Entities:</h3>
+                <ul>
+                    ${data.named_entities.map(entity => `<li>${entity[0]} (${entity[1]})</li>`).join('')}
+                </ul>
+                <h3>Key Phrases:</h3>
+                <ul>
+                    ${data.key_phrases.map(phrase => `<li>${phrase}</li>`).join('')}
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>

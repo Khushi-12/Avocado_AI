@@ -2,16 +2,24 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
-
+options = webdriver.ChromeOptions()
+options.add_argument('--headless')  # Run in headless mode
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 links = []
 url = 'https://flo.health/menstrual-cycle'
 base_url = 'https://flo.health'
-response = requests.get(url)
+driver.get(url)
 time.sleep(3)  # Allow time for the page to load
 
-soup = BeautifulSoup(response.content, 'html.parser')
+soup = BeautifulSoup(driver.page_source, 'html.parser')
 articles_section = soup.find_all('div', {'class': 'flo-categories__articles'})
+
+# print(articles_section)
 # Iterate through each div in the ResultSet
 for section in articles_section:
     # Find all 'a' tags within the current section
@@ -19,8 +27,7 @@ for section in articles_section:
     # Extract the href attribute from each 'a' tag and add it to the links list
     for tag in a_tags:
         links.append(base_url+tag['href'])
-
-
+# print(links)
 def extract_text(element):
     """Recursively extract text from relevant elements, maintaining the order."""
     text_content = []
@@ -31,8 +38,8 @@ def extract_text(element):
 article_list = []   
 
 for l in links:
-    driver.get(l)
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    response = requests.get(l)
+    soup = BeautifulSoup(response.content, 'html.parser')
     #TITLE
     title = soup.find('h1').text.strip()
     #URL

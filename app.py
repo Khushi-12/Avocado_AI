@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import spacy
@@ -40,24 +41,55 @@ async def root():
 @app.post("/process_article")
 async def process_article(article: ArticleRequest):
     logger.info("Received request to process article")
-    content = article.text
+    # content = article.text
     
     # Perform NER
     logger.info("Starting Named Entity Recognition")
-    doc = nlp(content)
-    named_entities = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ in ['DISEASE', 'SYMPTOM', 'TREATMENT', 'MEDICATION', 'HORMONE']]
-    logger.info(f"Named entities found: {named_entities}")
+    if not os.path.exists("articles.json"):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    with open("articles.json", "r") as f:
+        articles = json.load(f)
     
-    # Extract key phrases
-    logger.info("Starting key phrase extraction")
-    key_phrases = extract_key_phrases(content)
-    most_common_phrases = Counter(key_phrases).most_common(10)
-    logger.info(f"Key phrases found: {most_common_phrases}")
-    
+    phrase_list = []
+    freq_list = []
+    for article in articles:
+        logger.info(f"Title: {article['title']}")
+        logger.info(f"URL: {article['url']}")
+        logger.info(f"Publication Date: {article['publication_date']}")
+        
+        # Content
+        content = article['content']
+        
+        # Perform NER
+        doc = nlp(content)
+        logger.info("Named Entities:")
+        for ent in doc.ents:
+            if ent.label_ in ['DISEASE', 'SYMPTOM', 'TREATMENT', 'MEDICATION', 'HORMONE']:
+                logger.info(f"{ent.text} ({ent.label_})")
+        
+        # Extract key phrases
+        key_phrases = extract_key_phrases(content)
+        most_common_phrases = Counter(key_phrases).most_common(10)
+        logger.info("Key Phrases:")
+        for phrase, freq in most_common_phrases:
+            phrase_list.append(phrase)
+            freq_list.append(freq)
+
     return {
-        "named_entities": named_entities,
-        "key_phrases": most_common_phrases
+        "named_entities": phrase_list,
+        "key_phrases": freq_list
     }
+    # print(articles['content'])
+    # doc = nlp(articles['content'])
+    # named_entities = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ in ['DISEASE', 'SYMPTOM', 'TREATMENT', 'MEDICATION', 'HORMONE']]
+    # logger.info(f"Named entities found: {named_entities}")
+    
+    # # Extract key phrases
+    # logger.info("Starting key phrase extraction")
+    # key_phrases = extract_key_phrases(content)
+    # most_common_phrases = Counter(key_phrases).most_common(10)
+    # logger.info(f"Key phrases found: {most_common_phrases}")
 
 # Endpoint to serve articles.json
 @app.get("/articles")
