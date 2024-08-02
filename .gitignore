@@ -1,1 +1,4 @@
 env
+medical_ner
+articles.json
+.vscode
