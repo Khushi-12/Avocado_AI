@@ -7,6 +7,7 @@ from collections import Counter
 import json
 import os
 import logging
+import re
 # import spacy
 from fastapi.middleware.cors import CORSMiddleware
 from transformers import pipeline
@@ -18,9 +19,17 @@ model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-a
 pipe = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple", device = 0)
 
 nlp = spacy.load("en_core_web_sm")
-# Configure CORS
+
+def clean_text(text):
+    # Remove symbols and unnecessary characters
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    text = re.sub(r'\s+', ' ', text)  # Remove extra whitespace
+    text = text.strip()  # Remove leading and trailing whitespace
+    return text
+
 def extract_key_phrases(text):
-    doc = nlp(text.lower())
+    text = clean_text(text)  # Clean the text
+    doc = nlp(text.lower())  # Convert text to lowercase for uniformity
     candidate_phrases = []
     for chunk in doc.noun_chunks:
         if chunk.root.text.lower() not in STOP_WORDS and chunk.root.text not in punctuation:
@@ -29,8 +38,9 @@ def extract_key_phrases(text):
 
 def analyze_text(text):
     # Perform NER
+    text = clean_text(text)
     doc = pipe(text)
-    entities = [(ent['word'], ent['entity_group']) for ent in doc]
+    entities = [(ent['word'], ent['entity_group']) for ent in doc if '#' not in ent['word'] and '/' not in ent['word']]
     
     # Extract key phrases
     key_phrases = extract_key_phrases(text)
